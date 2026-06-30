@@ -52,6 +52,8 @@ app.use(
 
 const PORT = process.env.PORT || 3000;
 
+export default app;
+
 app.listen(PORT, () => {
   console.info(`server up on port ${PORT}`);
 });

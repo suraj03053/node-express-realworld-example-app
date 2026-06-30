@@ -1,0 +1,29 @@
+service: realworld-backend
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-2
+  environment:
+    DATABASE_URL: "postgresql://neondb_owner:npg_xNL2C1jzSGek@ep-round-block-atec06vg.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require"
+    JWT_SECRET: "mySecretKey12345"
+    NODE_ENV: "production"
+
+package:
+  patterns:
+    - '!e2e/**'
+    - '!src/**'
+    - '!*.ts'
+    - 'dist/api/src/**'
+    - 'node_modules/**'
+
+functions:
+  api:
+    handler: dist/api/src/lambda.handler
+    events:
+      - httpApi:
+          path: /api/{proxy+}
+          method: ANY
+      - httpApi:
+          path: /api
+          method: ANY
