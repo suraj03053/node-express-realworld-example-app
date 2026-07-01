@@ -1,74 +1,64 @@
-# ![Node/Express/Prisma Example App](project-logo.png)
+# RealWorld Backend — Node/Express/Prisma on AWS Lambda
 
-[![Build Status](https://travis-ci.org/anishkny/node-express-realworld-example-app.svg?branch=master)](https://travis-ci.org/anishkny/node-express-realworld-example-app)
+## Application Overview
+A REST API backend for the RealWorld (Conduit) application — a Medium.com clone. Built with Node.js, Express, TypeScript, and Prisma ORM.
 
-> ### Example Node (Express + Prisma) codebase containing real world examples (CRUD, auth, advanced patterns, etc) that adheres to the [RealWorld](https://github.com/gothinkster/realworld-example-apps) API spec.
+## Architecture and Deployment
+- **Backend**: AWS Lambda + API Gateway (serverless)
+- **Frontend**: AWS S3 + Static Website Hosting
+- **Database**: Neon PostgreSQL (serverless)
+- **CI/CD**: GitHub Actions
+- **Monitoring**: AWS CloudWatch
 
-<a href="https://thinkster.io/tutorials/node-json-api" target="_blank"><img width="454" src="https://raw.githubusercontent.com/gothinkster/realworld/master/media/learn-btn-hr.png" /></a>
+### Why these choices
+Lambda was chosen because it scales to zero when idle, meaning zero cost during inactivity. Neon was chosen as it is a serverless PostgreSQL provider compatible with Prisma ORM — DynamoDB was initially considered but is incompatible with Prisma's SQL-based query engine.
 
-## Getting Started
+## Deployment Cost
+All services used are on free tiers:
+- AWS Lambda: 1M free requests/month
+- AWS S3: 5GB free storage
+- Neon: 0.5GB free database
+- GitHub Actions: 2000 free minutes/month
 
-### Prerequisites
+Estimated monthly cost: $0
 
-Run the following command to install dependencies:
+## Prerequisites
+- Node.js 18+
+- AWS CLI configured
+- Serverless Framework v3
+- PostgreSQL database URL (Neon recommended)
 
-```shell
-npm install
-```
+## Deployment Steps
+1. Clone the repo
+2. Run `npm install`
+3. Create `.env` with `DATABASE_URL` and `JWT_SECRET`
+4. Run `npx prisma generate && npx prisma db push && npx prisma db seed`
+5. Run `serverless deploy`
 
-### Environment variables
+## CI/CD Workflow
+Every push to `master` triggers GitHub Actions which:
+1. Checks out code
+2. Installs dependencies
+3. Builds TypeScript
+4. Runs Snyk security scan
+5. Deploys to AWS Lambda via Serverless Framework
 
-This project depends on some environment variables.
-If you are running this project locally, create a `.env` file at the root for these variables.
-Your host provider should included a feature to set them there directly to avoid exposing them.
+## Versioning Strategy
+Git tags are used for versioning (e.g. v1.0.0, v1.0.1). Every deployment is tied to a specific commit SHA visible in GitHub Actions logs.
 
-Here are the required ones:
+## Security Approach
+- Snyk scans dependencies on every push
+- JWT authentication for protected routes
+- IAM roles with least-privilege access
+- Environment variables stored as GitHub Secrets, never in code
 
-```
-DATABASE_URL=
-JWT_SECRET=
-NODE_ENV=production
-```
+## Monitoring and Observability
+- AWS CloudWatch collects Lambda logs and metrics
+- CloudWatch alarm triggers email alert when Lambda errors exceed threshold
+- Logs viewable via: `aws logs tail /aws/lambda/realworld-backend-dev-api --region us-east-2`
 
-### Generate your Prisma client
-
-Run the following command to generate the Prisma Client which will include types based on your database schema:
-
-```shell
-npx prisma generate
-```
-
-### Apply any SQL migration script
-
-Run the following command to create/update your database based on existing sql migration scripts:
-
-```shell
-npx prisma migrate deploy
-```
-
-### Run the project
-
-Run the following command to run the project:
-
-```shell
-npx nx serve api
-```
-
-### Seed the database
-
-The project includes a seed script to populate the database:
-
-```shell
-npx prisma db seed
-```
-
-## Deploy on a remote server
-
-Run the following command to:
-- install dependencies
-- apply any new migration sql scripts
-- run the server
-
-```shell
-npm ci && npx prisma migrate deploy && node dist/api/main.js
-```
+## Challenges Encountered
+1. **Old frontend (Node 16)**: Used nvm to pin Node version for the legacy React app
+2. **Prisma + Lambda**: Added `rhel-openssl-1.0.x` binary target to schema.prisma for Linux compatibility
+3. **Package size**: Reduced Lambda package from 71MB to 1.8MB using serverless patterns to exclude unnecessary files
+4. **Port conflict**: Backend configured to use PORT environment variable to avoid EADDRINUSE errors
